@@ -9,7 +9,7 @@ use Carp qw(croak);
 use LWP::UserAgent;
 use HTTP::Request::Common qw(GET POST DELETE);
 
-our $api_base_url = 'https://graph.microsoft.com/v1.0';
+our $api_base_uri = 'https://graph.microsoft.com/v1.0';
 
 sub new {
   my ($class, $args) = @_;
@@ -93,7 +93,7 @@ sub refresh_tokens {
     scope => $$self{attribs}->{scope}
   };
 
-  my $req = POST "$$self->{attribs}->{oauth_base_uri}/token", $form_vars;
+  my $req = POST "$$self{attribs}->{oauth_base_uri}/token", $form_vars;
 
   my ($content, $res) = $self->send_request($req, { decode_json => 1 });
 
@@ -101,7 +101,47 @@ sub refresh_tokens {
 }
 
 sub list_people {
-  my ($self) = @_;
+  my ($self, $args) = @_;
+
+  croak 'Missing access token.' unless $$args{access_token};
+
+  my $query_hashref = {};
+  my $user = 'me';
+
+  if($$self{attribs}->{scope} =~ /People.Read.All/) {
+    $user = "user($user)"
+      if $$args{user}
+  }
+
+  if($$args{select}) {
+    $$query_hashref{'$select'} = join(',', @{ $$args{select} })
+      if(ref $$args{select} eq 'ARRAY')
+  }
+
+  $$query_hashref{'$top'} = $$args{top} if $$args{top};
+  $$query_hashref{'$filter'} = $$args{filter} if $$args{filter};
+  $$query_hashref{'$search'} = $$args{search} if $$args{search};
+
+  $$query_hashref{'$skip'} = $$args{skip} if $$args{skip} && !$$args{search};
+
+  my $req_uri = "$api_base_uri/$user/people";
+  my $query_params = $self->make_query_string($query_hashref);
+  $req_uri .= "?$query_params" if $query_params;
+
+  my $req = GET $req_uri;
+
+  print $req_uri, "\n";
+
+  my ($content, $res) = $self->send_request($req, {
+    decode_json => 1,
+    bearer_token => $$args{access_token}
+  });
+
+  return $content
+}
+
+sub list_contacts {
+  my ($self, $args) = @_;
 }
 
 sub make_query_string {
