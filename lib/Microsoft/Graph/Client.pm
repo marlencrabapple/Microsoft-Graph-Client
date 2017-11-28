@@ -130,8 +130,6 @@ sub list_people {
 
   my $req = GET $req_uri;
 
-  print $req_uri, "\n";
-
   my ($content, $res) = $self->send_request($req, {
     decode_json => 1,
     bearer_token => $$args{access_token}
