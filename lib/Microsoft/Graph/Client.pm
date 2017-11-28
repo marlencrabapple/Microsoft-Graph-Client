@@ -18,7 +18,6 @@ sub new {
     if(ref $$args{scope} eq 'ARRAY');
 
   croak "Missing scope(s)." unless $$args{scope};
-
   croak "Missing client ID." unless $$args{client_id};
   croak "Missing client secret." unless $$args{client_secret};
   croak "Missing redirect uri." unless $$args{redirect_uri};
@@ -75,7 +74,7 @@ sub get_tokens {
 
   my $req = POST "$$self{attribs}->{oauth_base_uri}/token", $form_vars;
 
-  my ($content, $res) = $self->send_request($req, 1);
+  my ($content, $res) = $self->send_request($req, { decode_json => 1 });
 
   return $content
 }
@@ -96,7 +95,7 @@ sub refresh_tokens {
 
   my $req = POST "$$self->{attribs}->{oauth_base_uri}/token", $form_vars;
 
-  my ($content, $res) = $self->send_request($req, 1);
+  my ($content, $res) = $self->send_request($req, { decode_json => 1 });
 
   return $content
 }
