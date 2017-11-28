@@ -28,14 +28,11 @@ sub new {
     client_id => $$args{client_id},
     client_secret => $$args{client_secret},
     tenant => $$args{tenant},
-    scope => $$args{scope}
+    scope => $$args{scope},
+    redirect_uri => $$args{redirect_uri}
   };
 
   $$attribs{oauth_base_uri} = "https://login.microsoftonline.com/$$args{tenant}/oauth2/v2.0";
-
-  # Assign these after hash creation to avoid values being assigned to wrong keys
-  $$attribs{redirect_uri} = $$args{redirect_uri} if $$args{redirect_uri};
-  $$attribs{login_hint} = $$args{login_hint} if $$args{login_hint};
 
   my $self = bless {}, $class;
 
@@ -123,12 +120,17 @@ sub make_query_string {
 }
 
 sub send_request {
-  my ($self, $req, $decode_json) = @_;
+  my ($self, $req, $args) = @_;
+
+  $args = ref $args eq 'HASH' ? $args : {};
+
+  $req->header('Authorization', "Bearer $$args{bearer_token}")
+    if $$args{bearer_token};
 
   my $res = $self->{ua}->request($req);
 
   if($res->is_success) {
-    return decode_json($res->decoded_content), $res if $decode_json;
+    return decode_json($res->decoded_content), $res if $$args{decode_json};
     return $res->decoded_content, $res
   }
 
